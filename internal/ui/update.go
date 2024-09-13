@@ -4,58 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aayushbtw/monit/stats"
+	"github.com/aayushbtw/monit/internal/stats"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
-	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish/bubbletea"
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/mem"
 )
-
-func Handler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	pty, _, _ := s.Pty()
-	renderer := bubbletea.MakeRenderer(s)
-	baseStyle := renderer.NewStyle()
-
-	tbl := table.New(
-		table.WithColumns([]table.Column{
-			{Title: "PID", Width: 10},
-			{Title: "Name", Width: 25},
-			{Title: "CPU", Width: 12},
-			{Title: "MEM", Width: 12},
-			{Title: "Username", Width: 12},
-			{Title: "Time", Width: 12},
-		}),
-		table.WithRows([]table.Row{}),
-		table.WithHeight(10),
-	)
-
-	m := model{
-		width:     pty.Window.Width,
-		height:    pty.Window.Height,
-		baseStyle: baseStyle,
-		tbl:       tbl,
-	}
-
-	return m, []tea.ProgramOption{tea.WithAltScreen()}
-}
-
-type model struct {
-	width  int
-	height int
-
-	tbl       table.Model
-	baseStyle lipgloss.Style
-
-	CpuUsage  cpu.TimesStat
-	MemUsage  mem.VirtualMemoryStat
-	SwapUsage mem.SwapMemoryStat
-}
-
-type TickMsg time.Time
 
 func tickEvery() tea.Cmd {
 	return tea.Every(time.Second, func(t time.Time) tea.Msg {
@@ -102,7 +55,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.SwapUsage = swapStats
 		}
 
-		procs, err := stats.GetProcesses(10)
+		currentNetStats, err := stats.GetNetworkStats()
+		if err != nil {
+			log.Error("Could not get network info", "error", err)
+		} else {
+			if m.PrevNetworkStats.BytesSent != 0 || m.PrevNetworkStats.BytesRecv != 0 {
+				// Calculate the speed based on previous and current stats
+				uploadSpeed := float64(currentNetStats.BytesSent-m.PrevNetworkStats.BytesSent) / 1.0   // Convert to bytes per second
+				downloadSpeed := float64(currentNetStats.BytesRecv-m.PrevNetworkStats.BytesRecv) / 1.0 // Convert to bytes per second
+
+				m.NetworkUploadSpeed = uploadSpeed
+				m.NetworkDownloadSpeed = downloadSpeed
+			}
+			m.PrevNetworkStats = currentNetStats // Update previous stats
+			m.NetworkStats = currentNetStats
+		}
+
+		procs, err := stats.GetProcesses(25)
 		if err != nil {
 			log.Error("Could not get processes", "error", err)
 		} else {
@@ -118,7 +87,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					p.RunningTime,
 				})
 			}
-			m.tbl.SetRows(rows)
+			m.processTable.SetRows(rows)
 		}
 
 		//
@@ -126,19 +95,4 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
-}
-
-func (m model) View() string {
-	content := m.baseStyle.
-		Width(m.width).
-		Height(m.height).
-		Padding(4, 10).
-		Render(
-			lipgloss.JoinVertical(lipgloss.Left,
-				m.baseStyle.PaddingBottom(1).Render(m.ViewHeader()),
-				m.tbl.View(),
-			),
-		)
-
-	return content
 }

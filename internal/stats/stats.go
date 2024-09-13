@@ -7,6 +7,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v4/net"
 	"github.com/shirou/gopsutil/v4/process"
 )
 
@@ -149,6 +150,21 @@ func GetProcesses(n int) ([]ProcessInfo, error) {
 	return processInfos, nil
 }
 
+func GetNetworkStats() (net.IOCountersStat, error) {
+	netIOs, err := net.IOCounters(false)
+	if err != nil {
+		return net.IOCountersStat{}, err
+	}
+
+	if len(netIOs) == 0 {
+		return net.IOCountersStat{}, fmt.Errorf("no network data available")
+	}
+
+	netInfo := netIOs[0]
+
+	return netInfo, nil
+}
+
 func ConvertBytes(bytes uint64) (string, string) {
 	const (
 		KB = 1024
@@ -165,5 +181,30 @@ func ConvertBytes(bytes uint64) (string, string) {
 		return fmt.Sprintf("%.2f", float64(bytes)/float64(KB)), "KB"
 	default:
 		return fmt.Sprintf("%d", bytes), "B"
+	}
+}
+
+func FormatNumber(n int64) (string, string) {
+	const (
+		K = 1000
+		M = K * 1000
+		G = M * 1000
+		T = G * 1000
+		P = T * 1000
+	)
+
+	switch {
+	case n >= P:
+		return fmt.Sprintf("%.2f", float64(n)/float64(P)), "P"
+	case n >= T:
+		return fmt.Sprintf("%.2f", float64(n)/float64(T)), "T"
+	case n >= G:
+		return fmt.Sprintf("%.2f", float64(n)/float64(G)), "G"
+	case n >= M:
+		return fmt.Sprintf("%.2f", float64(n)/float64(M)), "M"
+	case n >= K:
+		return fmt.Sprintf("%.2f", float64(n)/float64(K)), "K"
+	default:
+		return fmt.Sprintf("%d", n), ""
 	}
 }

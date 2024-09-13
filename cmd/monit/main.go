@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/aayushbtw/monit/ui"
+	"github.com/aayushbtw/monit/internal/ui"
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
@@ -20,7 +20,7 @@ const (
 )
 
 var users = map[string]string{
-	"Admin": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBL1CPXo/GUe+/wvxxpGrsdVxx8v+W8foAFo7QdM48hv Monit",
+
 	// You can add add your name and public key here :)
 }
 
