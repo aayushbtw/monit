@@ -2,4 +2,5 @@
 
 Monitor server stats via SSH.
 
-![Made with VHS](https://vhs.charm.sh/vhs-wOhgtJWoplUU5LyCFkYiO.gif)
+![Made with VHS](./monit.gif)
+![Made with VHS](./screenshot.png)
