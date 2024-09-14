@@ -15,6 +15,7 @@ type model struct {
 	height int
 
 	processTable table.Model
+	tableStyle   table.Styles
 	baseStyle    lipgloss.Style
 	viewStyle    lipgloss.Style
 
