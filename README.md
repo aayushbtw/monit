@@ -1,6 +1,6 @@
 # monit
 
-Monitor server stats via SSH.
+monitor server stats via ssh
 
 ![Made with VHS](./monit.gif)
 ![Made with VHS](./screenshot.png)
